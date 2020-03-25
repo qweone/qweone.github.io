@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>运维之配置变更 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Detail Matter， 虽然简单，但却重要！ 议题： 如何备份配置文件  在配置中心盛行的情况下，配置每次修改，都会有历史记录（比如etcd&#x2F;consul等等）。这种系统维护起来当然是非常轻便了。  大量的系统采用本地的配置文件。如何最记录每次的变更呢？ 最简单有效的方式，就是文件名绝对路径+日期，备份到特定的磁盘。 可以参照： 备份命令脚本，Pros: 逻辑绝对的简单清晰，Cons：服务器">
+<meta property="og:type" content="article">
+<meta property="og:title" content="运维之配置变更">
+<meta property="og:url" content="http://yoursite.com/2020/03/25/%E8%BF%90%E7%BB%B4%E4%B9%8B%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Detail Matter， 虽然简单，但却重要！ 议题： 如何备份配置文件  在配置中心盛行的情况下，配置每次修改，都会有历史记录（比如etcd&#x2F;consul等等）。这种系统维护起来当然是非常轻便了。  大量的系统采用本地的配置文件。如何最记录每次的变更呢？ 最简单有效的方式，就是文件名绝对路径+日期，备份到特定的磁盘。 可以参照： 备份命令脚本，Pros: 逻辑绝对的简单清晰，Cons：服务器">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-03-25T14:14:15.000Z">
+<meta property="article:modified_time" content="2020-03-25T14:19:11.338Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="运维">
+<meta property="article:tag" content="配置变更">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-运维之配置变更" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/25/%E8%BF%90%E7%BB%B4%E4%B9%8B%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/" class="article-date">
+  <time datetime="2020-03-25T14:14:15.000Z" itemprop="datePublished">2020-03-25</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      运维之配置变更
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><strong>Detail Matter， 虽然简单，但却重要！</strong></p>
+<p>议题： 如何备份配置文件</p>
+<ul>
+<li><p>在配置中心盛行的情况下，配置每次修改，都会有历史记录（比如etcd/consul等等）。这种系统维护起来当然是非常轻便了。</p>
+</li>
+<li><p>大量的系统采用本地的配置文件。如何最记录每次的变更呢？</p>
+<p>最简单有效的方式，就是文件名绝对路径+日期，备份到特定的磁盘。</p>
+<p>可以参照： <a href="https://www.dennyzhang.com/linux_cp" target="_blank" rel="noopener">备份命令脚本</a>，Pros: 逻辑绝对的简单清晰，Cons：服务器放上这个脚本，洁癖症有点难受。</p>
+</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/bin/bash -e</span></span><br><span class="line"><span class="function"><span class="title">mybackup</span></span>() &#123;</span><br><span class="line">    src_file=<span class="variable">$&#123;1?"What files to backup"&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># get default value from environment variable</span></span><br><span class="line">    <span class="keyword">if</span> [ -n <span class="string">"<span class="variable">$BAK_ROOT_DIR</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">        bak_root_dir=<span class="string">"<span class="variable">$BAK_ROOT_DIR</span>"</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        bak_root_dir=<span class="string">"/data/backup"</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">    parent_dir=$(dirname <span class="string">"<span class="variable">$src_file</span>"</span>)</span><br><span class="line">    short_fname=$(basename <span class="string">"<span class="variable">$src_file</span>"</span>)</span><br><span class="line">    date=<span class="string">"<span class="variable">$(date +'%Y%m%d.%H%M%S')</span>"</span></span><br><span class="line">    bak_dir=<span class="string">"<span class="variable">$&#123;bak_root_dir&#125;</span><span class="variable">$parent_dir</span>"</span></span><br><span class="line">    <span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$src_file</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">        mkdir -p <span class="string">"<span class="variable">$bak_dir</span>"</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"cp <span class="variable">$src_file</span> <span class="variable">$&#123;bak_dir&#125;</span>/<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">        cp <span class="string">"<span class="variable">$src_file</span>"</span> <span class="string">"<span class="variable">$&#123;bak_dir&#125;</span>/<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">    <span class="keyword">elif</span> [ -d <span class="string">"<span class="variable">$src_file</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">        mkdir -p <span class="string">"<span class="variable">$bak_dir</span>-<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"cp -r <span class="variable">$src_file</span> <span class="variable">$bak_dir</span>-<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">        cp -r <span class="string">"<span class="variable">$src_file</span>"</span> <span class="string">"<span class="variable">$bak_dir</span>-<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Error: <span class="variable">$src_file</span> doesn't exist"</span></span><br><span class="line">        <span class="built_in">exit</span> 1</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="更特殊的场景"><a href="#更特殊的场景" class="headerlink" title="更特殊的场景"></a>更特殊的场景</h2><p>Q：n台nginx，作为负载节点，使用相同的配置文件。如何做到有效的更改，且保证完全的一致呢？</p>
+<p>A： 杜绝手工修改产生差异行等情况。通过ansible playbook，统一修改。或修改一处，推送到所有节点，再reload nginx</p>
+<p>Q： 配置文件之备份</p>
+<p>A： 首先先思考，这个问题是不是驳论🤔。针对存在文件上的配置文件，如果生产服务器，本来存储都是高可用，那么剩下的最大的风险就是人为失误。于是基于墨菲定律，磁盘定时快照是必不可少的咯。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/25/%E8%BF%90%E7%BB%B4%E4%B9%8B%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/" data-id="ck87eunmy00001tu23gfw88lb" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%BF%90%E7%BB%B4/" rel="tag">运维</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/" rel="tag">配置变更</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/03/25/%E8%BF%90%E7%BB%B4%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">运维如何保证数据查询安全</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/calico/" rel="tag">calico</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kubernetes/" rel="tag">kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vue-route/" rel="tag">vue-route</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vue-js/" rel="tag">vue.js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%85%A8%E5%B1%80%E7%BB%84%E4%BB%B6/" rel="tag">全局组件</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag">数据库</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/" rel="tag">数据查询安全</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%BF%90%E7%BB%B4/" rel="tag">运维</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/" rel="tag">配置变更</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/calico/" style="font-size: 10px;">calico</a> <a href="/tags/kubernetes/" style="font-size: 10px;">kubernetes</a> <a href="/tags/vue-route/" style="font-size: 10px;">vue-route</a> <a href="/tags/vue-js/" style="font-size: 20px;">vue.js</a> <a href="/tags/%E5%85%A8%E5%B1%80%E7%BB%84%E4%BB%B6/" style="font-size: 10px;">全局组件</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" style="font-size: 10px;">数据库</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/" style="font-size: 10px;">数据查询安全</a> <a href="/tags/%E8%BF%90%E7%BB%B4/" style="font-size: 20px;">运维</a> <a href="/tags/%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/" style="font-size: 10px;">配置变更</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/03/25/%E8%BF%90%E7%BB%B4%E4%B9%8B%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/">运维之配置变更</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/25/%E8%BF%90%E7%BB%B4%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/">运维如何保证数据查询安全</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/23/vue-component/">vue-component</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/23/vue-route/">vue-route</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/23/calico-ipam/">Calico IPAM</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

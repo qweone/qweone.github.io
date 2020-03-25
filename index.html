@@ -64,6 +64,250 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-运维之配置变更" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/25/%E8%BF%90%E7%BB%B4%E4%B9%8B%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/" class="article-date">
+  <time datetime="2020-03-25T14:14:15.000Z" itemprop="datePublished">2020-03-25</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/25/%E8%BF%90%E7%BB%B4%E4%B9%8B%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/">运维之配置变更</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><strong>Detail Matter， 虽然简单，但却重要！</strong></p>
+<p>议题： 如何备份配置文件</p>
+<ul>
+<li><p>在配置中心盛行的情况下，配置每次修改，都会有历史记录（比如etcd/consul等等）。这种系统维护起来当然是非常轻便了。</p>
+</li>
+<li><p>大量的系统采用本地的配置文件。如何最记录每次的变更呢？</p>
+<p>最简单有效的方式，就是文件名绝对路径+日期，备份到特定的磁盘。</p>
+<p>可以参照： <a href="https://www.dennyzhang.com/linux_cp" target="_blank" rel="noopener">备份命令脚本</a>，Pros: 逻辑绝对的简单清晰，Cons：服务器放上这个脚本，洁癖症有点难受。</p>
+</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/bin/bash -e</span></span><br><span class="line"><span class="function"><span class="title">mybackup</span></span>() &#123;</span><br><span class="line">    src_file=<span class="variable">$&#123;1?"What files to backup"&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># get default value from environment variable</span></span><br><span class="line">    <span class="keyword">if</span> [ -n <span class="string">"<span class="variable">$BAK_ROOT_DIR</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">        bak_root_dir=<span class="string">"<span class="variable">$BAK_ROOT_DIR</span>"</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        bak_root_dir=<span class="string">"/data/backup"</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">    parent_dir=$(dirname <span class="string">"<span class="variable">$src_file</span>"</span>)</span><br><span class="line">    short_fname=$(basename <span class="string">"<span class="variable">$src_file</span>"</span>)</span><br><span class="line">    date=<span class="string">"<span class="variable">$(date +'%Y%m%d.%H%M%S')</span>"</span></span><br><span class="line">    bak_dir=<span class="string">"<span class="variable">$&#123;bak_root_dir&#125;</span><span class="variable">$parent_dir</span>"</span></span><br><span class="line">    <span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$src_file</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">        mkdir -p <span class="string">"<span class="variable">$bak_dir</span>"</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"cp <span class="variable">$src_file</span> <span class="variable">$&#123;bak_dir&#125;</span>/<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">        cp <span class="string">"<span class="variable">$src_file</span>"</span> <span class="string">"<span class="variable">$&#123;bak_dir&#125;</span>/<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">    <span class="keyword">elif</span> [ -d <span class="string">"<span class="variable">$src_file</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">        mkdir -p <span class="string">"<span class="variable">$bak_dir</span>-<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"cp -r <span class="variable">$src_file</span> <span class="variable">$bak_dir</span>-<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">        cp -r <span class="string">"<span class="variable">$src_file</span>"</span> <span class="string">"<span class="variable">$bak_dir</span>-<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Error: <span class="variable">$src_file</span> doesn't exist"</span></span><br><span class="line">        <span class="built_in">exit</span> 1</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="更特殊的场景"><a href="#更特殊的场景" class="headerlink" title="更特殊的场景"></a>更特殊的场景</h2><p>Q：n台nginx，作为负载节点，使用相同的配置文件。如何做到有效的更改，且保证完全的一致呢？</p>
+<p>A： 杜绝手工修改产生差异行等情况。通过ansible playbook，统一修改。或修改一处，推送到所有节点，再reload nginx</p>
+<p>Q： 配置文件之备份</p>
+<p>A： 首先先思考，这个问题是不是驳论🤔。针对存在文件上的配置文件，如果生产服务器，本来存储都是高可用，那么剩下的最大的风险就是人为失误。于是基于墨菲定律，磁盘定时快照是必不可少的咯。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/25/%E8%BF%90%E7%BB%B4%E4%B9%8B%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/" data-id="ck87eunmy00001tu23gfw88lb" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%BF%90%E7%BB%B4/" rel="tag">运维</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/" rel="tag">配置变更</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-运维如何保证数据查询安全" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/25/%E8%BF%90%E7%BB%B4%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/" class="article-date">
+  <time datetime="2020-03-25T14:00:15.000Z" itemprop="datePublished">2020-03-25</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/25/%E8%BF%90%E7%BB%B4%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/">运维如何保证数据查询安全</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>生产数据用于测试环境测试，在小型企业应该是比较常见的现象了。测试/开发团队会以无法在内部环境，复现故障为理由，要求将生产备份数据导入到测试环境。即使提供了脱敏脚本，也不见得团队会持续，及时地更新脚本。</p>
+<p>此外，另一个问题便是，是否让开发连接生产数据库，即使是使用只读账号。缺少了数据，排错定位，难度会增加不少。目前个人的体会是，在无法拷贝数据的环境下，隐藏或混淆敏感数据，再配合每次查询进行审计/审核记录，这种方式可以兼顾，最大的开发便捷性与安全审计。</p>
+<p>在GOOGLE 关键字：production data testing environment，会有更多细节/专业的分析。十分值得琢磨。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/25/%E8%BF%90%E7%BB%B4%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/" data-id="ck87ey9f600004zu2966yeoqb" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag">数据库</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/" rel="tag">数据查询安全</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%BF%90%E7%BB%B4/" rel="tag">运维</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-vue-component" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/23/vue-component/" class="article-date">
+  <time datetime="2020-03-23T07:41:05.000Z" itemprop="datePublished">2020-03-23</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/23/vue-component/">vue-component</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>接下来，表演默写代码。</p>
+<h2 id="全局组件"><a href="#全局组件" class="headerlink" title="全局组件"></a>全局组件</h2><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;!DOCTYPE <span class="meta-keyword">html</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">html</span> <span class="attr">lang</span>=<span class="string">"en"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">head</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">meta</span> <span class="attr">charset</span>=<span class="string">"UTF-8"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">meta</span> <span class="attr">name</span>=<span class="string">"viewport"</span> <span class="attr">content</span>=<span class="string">"width=device-width, initial-scale=1.0"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">title</span>&gt;</span>Document<span class="tag">&lt;/<span class="name">title</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">"https://cdn.staticfile.org/vue/2.2.2/vue.min.js"</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">head</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"app"</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">backend</span>&gt;</span><span class="tag">&lt;/<span class="name">backend</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"app2"</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">backend</span>&gt;</span><span class="tag">&lt;/<span class="name">backend</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="handlebars"><span class="xml">      <span class="comment">&lt;!-- 此处定义的是全局组件 --&gt;</span></span></span></span><br><span class="line"><span class="actionscript">      Vue.component(<span class="string">'backend'</span>, &#123;</span></span><br><span class="line"><span class="handlebars"><span class="xml">        template: '<span class="tag">&lt;<span class="name">div</span> <span class="attr">style</span>=<span class="string">"background-color:yellow"</span>&gt;</span>This is Backend<span class="tag">&lt;/<span class="name">div</span>&gt;</span>'</span></span></span><br><span class="line">      &#125;);</span><br><span class="line"><span class="actionscript">      <span class="keyword">new</span> Vue(&#123;</span></span><br><span class="line"><span class="actionscript">        el: <span class="string">'#app'</span></span></span><br><span class="line">      &#125;);</span><br><span class="line"><span class="handlebars"><span class="xml">      <span class="comment">&lt;!-- 所有的el都能使用全局组件 --&gt;</span></span></span></span><br><span class="line"><span class="actionscript">      <span class="keyword">new</span> Vue(&#123;</span></span><br><span class="line"><span class="actionscript">        el: <span class="string">'#app2'</span></span></span><br><span class="line">      &#125;);</span><br><span class="line">    <span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">body</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="局部组件"><a href="#局部组件" class="headerlink" title="局部组件"></a>局部组件</h2><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;!DOCTYPE <span class="meta-keyword">html</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">html</span> <span class="attr">lang</span>=<span class="string">"en"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">head</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">meta</span> <span class="attr">charset</span>=<span class="string">"UTF-8"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">meta</span> <span class="attr">name</span>=<span class="string">"viewport"</span> <span class="attr">content</span>=<span class="string">"width=device-width, initial-scale=1.0"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">title</span>&gt;</span>Document<span class="tag">&lt;/<span class="name">title</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">"https://cdn.staticfile.org/vue/2.2.2/vue.min.js"</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">head</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"app"</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">background</span>&gt;</span><span class="tag">&lt;/<span class="name">background</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- id='app2' 无法获取到 id='app'中定义的局部component --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"app2"</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">background</span>&gt;</span><span class="tag">&lt;/<span class="name">background</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="actionscript">      <span class="keyword">new</span> Vue(&#123;</span></span><br><span class="line"><span class="actionscript">        el: <span class="string">'#app'</span>,</span></span><br><span class="line">        components: &#123;</span><br><span class="line">          background: &#123;</span><br><span class="line">            template:</span><br><span class="line"><span class="handlebars"><span class="xml">              '<span class="tag">&lt;<span class="name">div</span> <span class="attr">style</span>=<span class="string">"background-color:yellow"</span>&gt;</span>This is Backend<span class="tag">&lt;/<span class="name">div</span>&gt;</span>'</span></span></span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;);</span><br><span class="line"></span><br><span class="line"><span class="actionscript">      <span class="keyword">new</span> Vue(&#123;</span></span><br><span class="line"><span class="actionscript">        el: <span class="string">'#app2'</span></span></span><br><span class="line">      &#125;);</span><br><span class="line">    <span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">body</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+
+
+<ul>
+<li>组件的定义，是<template></template>  ，多看才能熟悉啊！😓</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/23/vue-component/" data-id="ck87e0bes0006you2g4n8bkxd" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/vue-js/" rel="tag">vue.js</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%85%A8%E5%B1%80%E7%BB%84%E4%BB%B6/" rel="tag">全局组件</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-vue-route" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/23/vue-route/" class="article-date">
+  <time datetime="2020-03-23T07:37:15.000Z" itemprop="datePublished">2020-03-23</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/23/vue-route/">vue-route</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Vue-route-笔记"><a href="#Vue-route-笔记" class="headerlink" title="Vue-route 笔记"></a>Vue-route 笔记</h1><h2 id="hash-和history"><a href="#hash-和history" class="headerlink" title="hash 和history"></a>hash 和history</h2><blockquote>
+<p>@Chandler</p>
+<p>先会用了，再深究原理。</p>
+<p>vue-route 的hash 模式，理解成url与实际请求并不对等。并且浏览器url地址栏，中有#。</p>
+<p>而vue-route的history模式，要求url与实际请求对等。详细内容，等进一步学习。</p>
+</blockquote>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/23/vue-route/" data-id="ck87e0ben0001you2ca8hc3wf" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/vue-route/" rel="tag">vue-route</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/vue-js/" rel="tag">vue.js</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-calico-ipam" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/23/calico-ipam/" class="article-date">
+  <time datetime="2020-03-23T05:03:35.000Z" itemprop="datePublished">2020-03-23</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/23/calico-ipam/">Calico IPAM</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>同事发现内网新搭建的K8S集群，某个node的路由记录，没有被聚合。这台node上的每一个pods，都单独生成了一条路由记录。触发我的纠结病，于是开始了长达两天的追查。也顺带把Calico的文档扫了一遍。</p>
+<ul>
+<li>集群跨两层办公室机房，node本身就跨网段，ipip 也设置为<strong>CrossSubnet</strong>，所以出现了tunl0的设备。</li>
+<li>pods的cidr为 10.200.0.0/23, 共计512个IP地址</li>
+<li>calico的IPP中，定义的blocksize为默认值26。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">[root@ip-10-20-0-196 calico_init]<span class="comment"># ip r</span></span><br><span class="line">default via 10.20.0.1 dev ens192</span><br><span class="line">10.20.0.0/24 dev ens192 proto kernel scope link src 10.20.0.196</span><br><span class="line">10.220.0.0/26 via 10.20.0.223 dev ens192 proto bird</span><br><span class="line">10.220.0.64/26 via 10.20.0.193 dev ens192 proto bird</span><br><span class="line">10.220.0.128/26 via 10.20.0.191 dev ens192 proto bird</span><br><span class="line">10.220.0.143 via 10.20.1.152 dev tunl0 proto bird onlink</span><br><span class="line">10.220.0.145 via 10.20.1.152 dev tunl0 proto bird onlink</span><br><span class="line">10.220.0.146 via 10.20.1.152 dev tunl0 proto bird onlink</span><br><span class="line">10.220.0.160 via 10.20.0.228 dev ens192 proto bird</span><br><span class="line">10.220.0.161 via 10.20.0.228 dev ens192 proto bird</span><br><span class="line">10.220.0.173 via 10.20.1.152 dev tunl0 proto bird onlink</span><br><span class="line">10.220.0.174 via 10.20.1.152 dev tunl0 proto bird onlink</span><br><span class="line">10.220.0.192/26 via 10.20.0.198 dev ens192 proto bird</span><br><span class="line">10.220.1.0/26 via 10.20.0.197 dev ens192 proto bird</span><br><span class="line">10.220.1.64/26 via 10.20.0.228 dev ens192 proto bird</span><br><span class="line">10.220.1.128/26 via 10.20.0.204 dev ens192 proto bird</span><br><span class="line">blackhole 10.220.1.192/26 proto bird</span><br><span class="line">10.220.1.194 dev caliafe1d50ff0f scope link</span><br><span class="line">10.220.1.195 dev cali9420a200f80 scope link</span><br><span class="line">10.220.1.198 dev cali7a9789f2db7 scope link</span><br><span class="line">10.220.1.200 dev cali68093c17d26 scope link</span><br><span class="line">169.254.0.0/16 dev ens192 scope link metric 1002</span><br><span class="line">172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown</span><br></pre></td></tr></table></figure>
+
+
+
+<p>由于路由的聚合，取决于 calico ipp 中blocksize定义，但是ipp反复比对，也是正常。</p>
+<p>最终觉悟的是，发现10.20.1.151 node是的pods ip并不是完整的一段。从而找到了最终答案。</p>
+<p><strong>答案： 我们划的网络是10.200.0.0/23. 所以总共有512个ip<br>而calico的blocksize值为26，所以每一个node 可以有64个pods。那么512可以有8个node。结果我们的集群，3台master，3台rooh ceph，1台jenkins。所以集群数量轻而易举的超越了8台。等到集群出现第八个节点时，calico 已经无法聚合路由记录，遍出现了零散的路由，随着集群node的增加，问题也会渐渐凸显。</strong></p>
+<p><img src="https://i.loli.net/2020/03/23/jtVNOLvb8uSdwgf.jpg" alt="9B034FC4-883A-4BE5-AA03-23D85E8F870F.png"></p>
+<h2 id="集群目前的状态"><a href="#集群目前的状态" class="headerlink" title="集群目前的状态"></a>集群目前的状态</h2><p>目前内网集群采用BGP模式，full mesh 。没有用Route Reflect，原因是机器可能迁移至长沙，集群如无意外要拆了重建😵。所以也就先不该动了。目前，通过核心路由器上添加记录，实现*<em>个人电脑无缝打通pods/ SVC网络 *</em>。我起初规划的方案是采用BGP的RR模式，为E3/ E7/ E9，每一层楼设置BGP node，然后再分配不同的IP Pools，用以区别。可是….</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/23/calico-ipam/" data-id="ck842921w0000x2u26bm20e4s" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/calico/" rel="tag">calico</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kubernetes/" rel="tag">kubernetes</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-技术博客开篇" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/03/23/%E6%8A%80%E6%9C%AF%E5%8D%9A%E5%AE%A2%E5%BC%80%E7%AF%87/" class="article-date">
@@ -166,9 +410,23 @@
 
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/calico/" rel="tag">calico</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kubernetes/" rel="tag">kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vue-route/" rel="tag">vue-route</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vue-js/" rel="tag">vue.js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%85%A8%E5%B1%80%E7%BB%84%E4%BB%B6/" rel="tag">全局组件</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag">数据库</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/" rel="tag">数据查询安全</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%BF%90%E7%BB%B4/" rel="tag">运维</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/" rel="tag">配置变更</a></li></ul>
+    </div>
+  </div>
+
 
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/calico/" style="font-size: 10px;">calico</a> <a href="/tags/kubernetes/" style="font-size: 10px;">kubernetes</a> <a href="/tags/vue-route/" style="font-size: 10px;">vue-route</a> <a href="/tags/vue-js/" style="font-size: 20px;">vue.js</a> <a href="/tags/%E5%85%A8%E5%B1%80%E7%BB%84%E4%BB%B6/" style="font-size: 10px;">全局组件</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" style="font-size: 10px;">数据库</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/" style="font-size: 10px;">数据查询安全</a> <a href="/tags/%E8%BF%90%E7%BB%B4/" style="font-size: 20px;">运维</a> <a href="/tags/%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/" style="font-size: 10px;">配置变更</a>
+    </div>
+  </div>
+
   
     
   <div class="widget-wrap">
@@ -187,11 +445,23 @@
       <ul>
         
           <li>
-            <a href="/2020/03/23/%E6%8A%80%E6%9C%AF%E5%8D%9A%E5%AE%A2%E5%BC%80%E7%AF%87/">技术博客开篇</a>
+            <a href="/2020/03/25/%E8%BF%90%E7%BB%B4%E4%B9%8B%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/">运维之配置变更</a>
           </li>
         
           <li>
-            <a href="/2020/03/23/hello-world/">Hello World</a>
+            <a href="/2020/03/25/%E8%BF%90%E7%BB%B4%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/">运维如何保证数据查询安全</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/23/vue-component/">vue-component</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/23/vue-route/">vue-route</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/23/calico-ipam/">Calico IPAM</a>
           </li>
         
       </ul>

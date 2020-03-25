@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Calico IPAM | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="同事发现内网新搭建的K8S集群，某个node的路由记录，没有被聚合。这台node上的每一个pods，都单独生成了一条路由记录。触发我的纠结病，于是开始了长达两天的追查。也顺带把Calico的文档扫了一遍。  集群跨两层办公室机房，node本身就跨网段，ipip 也设置为CrossSubnet，所以出现了tunl0的设备。 pods的cidr为 10.200.0.0&#x2F;23, 共计512个IP地址 c">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Calico IPAM">
+<meta property="og:url" content="http://yoursite.com/2020/03/23/calico-ipam/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="同事发现内网新搭建的K8S集群，某个node的路由记录，没有被聚合。这台node上的每一个pods，都单独生成了一条路由记录。触发我的纠结病，于是开始了长达两天的追查。也顺带把Calico的文档扫了一遍。  集群跨两层办公室机房，node本身就跨网段，ipip 也设置为CrossSubnet，所以出现了tunl0的设备。 pods的cidr为 10.200.0.0&#x2F;23, 共计512个IP地址 c">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/03/23/jtVNOLvb8uSdwgf.jpg">
+<meta property="article:published_time" content="2020-03-23T05:03:35.000Z">
+<meta property="article:modified_time" content="2020-03-25T14:19:54.457Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="kubernetes">
+<meta property="article:tag" content="calico">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/03/23/jtVNOLvb8uSdwgf.jpg">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-calico-ipam" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/23/calico-ipam/" class="article-date">
+  <time datetime="2020-03-23T05:03:35.000Z" itemprop="datePublished">2020-03-23</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Calico IPAM
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>同事发现内网新搭建的K8S集群，某个node的路由记录，没有被聚合。这台node上的每一个pods，都单独生成了一条路由记录。触发我的纠结病，于是开始了长达两天的追查。也顺带把Calico的文档扫了一遍。</p>
+<ul>
+<li>集群跨两层办公室机房，node本身就跨网段，ipip 也设置为<strong>CrossSubnet</strong>，所以出现了tunl0的设备。</li>
+<li>pods的cidr为 10.200.0.0/23, 共计512个IP地址</li>
+<li>calico的IPP中，定义的blocksize为默认值26。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">[root@ip-10-20-0-196 calico_init]<span class="comment"># ip r</span></span><br><span class="line">default via 10.20.0.1 dev ens192</span><br><span class="line">10.20.0.0/24 dev ens192 proto kernel scope link src 10.20.0.196</span><br><span class="line">10.220.0.0/26 via 10.20.0.223 dev ens192 proto bird</span><br><span class="line">10.220.0.64/26 via 10.20.0.193 dev ens192 proto bird</span><br><span class="line">10.220.0.128/26 via 10.20.0.191 dev ens192 proto bird</span><br><span class="line">10.220.0.143 via 10.20.1.152 dev tunl0 proto bird onlink</span><br><span class="line">10.220.0.145 via 10.20.1.152 dev tunl0 proto bird onlink</span><br><span class="line">10.220.0.146 via 10.20.1.152 dev tunl0 proto bird onlink</span><br><span class="line">10.220.0.160 via 10.20.0.228 dev ens192 proto bird</span><br><span class="line">10.220.0.161 via 10.20.0.228 dev ens192 proto bird</span><br><span class="line">10.220.0.173 via 10.20.1.152 dev tunl0 proto bird onlink</span><br><span class="line">10.220.0.174 via 10.20.1.152 dev tunl0 proto bird onlink</span><br><span class="line">10.220.0.192/26 via 10.20.0.198 dev ens192 proto bird</span><br><span class="line">10.220.1.0/26 via 10.20.0.197 dev ens192 proto bird</span><br><span class="line">10.220.1.64/26 via 10.20.0.228 dev ens192 proto bird</span><br><span class="line">10.220.1.128/26 via 10.20.0.204 dev ens192 proto bird</span><br><span class="line">blackhole 10.220.1.192/26 proto bird</span><br><span class="line">10.220.1.194 dev caliafe1d50ff0f scope link</span><br><span class="line">10.220.1.195 dev cali9420a200f80 scope link</span><br><span class="line">10.220.1.198 dev cali7a9789f2db7 scope link</span><br><span class="line">10.220.1.200 dev cali68093c17d26 scope link</span><br><span class="line">169.254.0.0/16 dev ens192 scope link metric 1002</span><br><span class="line">172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown</span><br></pre></td></tr></table></figure>
+
+
+
+<p>由于路由的聚合，取决于 calico ipp 中blocksize定义，但是ipp反复比对，也是正常。</p>
+<p>最终觉悟的是，发现10.20.1.151 node是的pods ip并不是完整的一段。从而找到了最终答案。</p>
+<p><strong>答案： 我们划的网络是10.200.0.0/23. 所以总共有512个ip<br>而calico的blocksize值为26，所以每一个node 可以有64个pods。那么512可以有8个node。结果我们的集群，3台master，3台rooh ceph，1台jenkins。所以集群数量轻而易举的超越了8台。等到集群出现第八个节点时，calico 已经无法聚合路由记录，遍出现了零散的路由，随着集群node的增加，问题也会渐渐凸显。</strong></p>
+<p><img src="https://i.loli.net/2020/03/23/jtVNOLvb8uSdwgf.jpg" alt="9B034FC4-883A-4BE5-AA03-23D85E8F870F.png"></p>
+<h2 id="集群目前的状态"><a href="#集群目前的状态" class="headerlink" title="集群目前的状态"></a>集群目前的状态</h2><p>目前内网集群采用BGP模式，full mesh 。没有用Route Reflect，原因是机器可能迁移至长沙，集群如无意外要拆了重建😵。所以也就先不该动了。目前，通过核心路由器上添加记录，实现*<em>个人电脑无缝打通pods/ SVC网络 *</em>。我起初规划的方案是采用BGP的RR模式，为E3/ E7/ E9，每一层楼设置BGP node，然后再分配不同的IP Pools，用以区别。可是….</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/23/calico-ipam/" data-id="ck842921w0000x2u26bm20e4s" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/calico/" rel="tag">calico</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kubernetes/" rel="tag">kubernetes</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/03/23/vue-route/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          vue-route
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2020/03/23/%E6%8A%80%E6%9C%AF%E5%8D%9A%E5%AE%A2%E5%BC%80%E7%AF%87/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">技术博客开篇</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/calico/" rel="tag">calico</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kubernetes/" rel="tag">kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vue-route/" rel="tag">vue-route</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vue-js/" rel="tag">vue.js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%85%A8%E5%B1%80%E7%BB%84%E4%BB%B6/" rel="tag">全局组件</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag">数据库</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/" rel="tag">数据查询安全</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%BF%90%E7%BB%B4/" rel="tag">运维</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/" rel="tag">配置变更</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/calico/" style="font-size: 10px;">calico</a> <a href="/tags/kubernetes/" style="font-size: 10px;">kubernetes</a> <a href="/tags/vue-route/" style="font-size: 10px;">vue-route</a> <a href="/tags/vue-js/" style="font-size: 20px;">vue.js</a> <a href="/tags/%E5%85%A8%E5%B1%80%E7%BB%84%E4%BB%B6/" style="font-size: 10px;">全局组件</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" style="font-size: 10px;">数据库</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/" style="font-size: 10px;">数据查询安全</a> <a href="/tags/%E8%BF%90%E7%BB%B4/" style="font-size: 20px;">运维</a> <a href="/tags/%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/" style="font-size: 10px;">配置变更</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/03/25/%E8%BF%90%E7%BB%B4%E4%B9%8B%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/">运维之配置变更</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/25/%E8%BF%90%E7%BB%B4%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/">运维如何保证数据查询安全</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/23/vue-component/">vue-component</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/23/vue-route/">vue-route</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/23/calico-ipam/">Calico IPAM</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
