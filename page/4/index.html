@@ -1,0 +1,168 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content=""><meta name="keywords" content=""><meta name="author" content="Chandler Kwok"><meta name="copyright" content="Chandler Kwok"><title>熟能生巧 | 郭大瞎のBlog</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.7.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.7.0"><meta name="format-detection" content="telephone=no"><meta http-equiv="x-dns-prefetch-control" content="on"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  }
+} </script><meta name="generator" content="Hexo 4.2.0"></head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="false"><div class="author-info"><div class="author-info__avatar text-center"><img src="https://i.loli.net/2020/05/05/r8BpGnwzsW25QSN.jpg"></div><div class="author-info__name text-center">Chandler Kwok</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">Articles</span><span class="pull-right">52</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">Tags</span><span class="pull-right">52</span></a></div></div></div><nav id="nav" style="background-image: url(https://tva1.sinaimg.cn/large/007S8ZIlgy1get1mqmvxij31hc0u0q7i.jpg)"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">郭大瞎のBlog</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/categories">Categories</a></span><span class="pull-right"></span></div><div id="site-info"><div id="site-title">郭大瞎のBlog</div><div id="site-sub-title">熟能生巧</div></div></nav><div id="content-outer"><div class="layout" id="content-inner"><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/15/aws-s3-static-website/">aws s3 static website</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-15</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/aws/">aws</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/s3/">s3</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/cloudfront/">cloudfront</a></span><div class="content"><p>Aws S3 加上cloudfront，可以直接代替nginx。并且有更高的可用性。于是告诉给架构师这个方案后，就开始配置了。</p>
+<ol>
+<li>开bucket，设置静态托管</li>
+</ol>
+<p><img src="https://i.loli.net/2020/04/15/hT2kLX5bKEQNug6.png" alt="image.png"></p>
+<ol start="2">
+<li><p>设置bucket policy，所有资源均为public</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">"Version"</span>: <span class="string">"2012-10-17"</span>,</span><br><span class="line">    <span class="attr">"Id"</span>: <span class="string">"Policy1586756429373"</span>,</span><br><span class="line">    <span class="attr">"Statement"</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">"Sid"</span>: <span class="string">"Stmt1586756xxxx5"</span>,</span><br><span class="line">            <span class="attr">"Effect"</span>: <span class="string">"Allow"</span>,</span><br><span class="line">            <span class="attr">"Principal"</span>: <span class="string">"*"</span>,</span><br><span class="line">            <span class="attr">"Action"</span>: <span class="string">"s3:GetObject"</span>,</span><br><span class="line">            <span class="attr">"Resource"</span>: <span class="string">"arn:aws:s3:::xxx-speedup/*"</span></span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>开始Cloudfront，限定只允许GET，HEAD 两种method。还有开启Gzip。暂时用最简单的配置。</p>
+<p><img src="https://i.loli.net/2020/04/15/emMT4YEbvzoxFZA.png" alt="image.png"></p>
+</li>
+<li><p>上传资源到S3</p>
+<p>Jenkins plugin 本有一个S3插件，可是依赖maven 3.5版本，由于现在开发团队在用3.4，于是放弃该插件。</p>
+<p>改用传统的步骤：jenkins执行shell，</p>
+<p>AWS_ACCESS_KEY_ID与AWS_SECRET_ACCESS_KEY，就取巧通过参数化构建过程带入吧！恰巧这个插件会将参数设置为环境变量，所以就这么办了。（Pipeline + Credentials会更加优雅）</p>
+<p>注意上传前，自己先gzip一下，因为S3可是不会自动帮你压缩的。当然这个也可以通过event驱动Lambda来优雅实现。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">find ./ -type f -exec gzip "&#123;&#125;" \; -exec mv "&#123;&#125;.gz" "&#123;&#125;" \;</span><br><span class="line">aws s3  mv  ./  s3://xxx-speedup  --recursive --exclude ".git/*"   --content-encoding "gzip"</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://i.loli.net/2020/04/15/wA5IPakjCm2F8fQ.png" alt="image.png"></p>
+</li>
+</ol>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/14/mvcc/">mvcc</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-14</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/mvcc/">mvcc</a></span><div class="content"><p>——-可爱的分割线——–</p>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/14/why-docker/">WHY docker？</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-14</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/docker/">docker</a></span><div class="content"><p>Docker/Kubernetes 天天弄，可是又有多少底层技术深刻的记在心里呢。</p>
+<p>原理：COW （Copy On Write）</p>
+<p>Docker 镜像由多个只读层叠加而成，启动容器时，Docker会加载只读镜像层，并在镜像栈顶部添加一个读写成。如果运行的容器修改了一个已经存在的文件。那么文件就会从只读层复制到读写层，该文件的只读版本依然存在。</p>
+<p>理解原理后，便是要思考如何运用到工作中🥶。</p>
+<ul>
+<li><p>容器最后的读写层，可能一般包含了修改的文件。 所以应该避免将容器，docker commit 的方式提交到registry。</p>
+</li>
+<li><p>docker ps -s 可以看到容器总共的size（含读写层），以及读写层的size。</p>
+</li>
+<li><p>docker history 看到的 某些层为missing，没有标注ID。其实是因为这些层不在这台电脑上封装。</p>
+<p><img src="https://i.loli.net/2020/04/17/PuK8WE9sbGhyBzd.png" alt="image.png"></p>
+</li>
+</ul>
+<p>base 镜像 - Linux最小安装的Linux发行版</p>
+<ul>
+<li><p>在Dockerhub上拉去一个centos镜像，看到只有200mb。困惑。其实这是因为docker镜像在运行时，使用的是docker宿主机的kernel。Linux操作系统由内核空间和用户空间组成。</p>
+<p><img src="https://i.loli.net/2020/04/17/LgZ3wEkXtsrhCnj.png" alt="image.png"></p>
+</li>
+</ul>
+<h3 id="My-Question"><a href="#My-Question" class="headerlink" title="My Question"></a>My Question</h3><p>那么相同的两个镜像，做了少许改动后，push到harbor，客户端需要把镜像每一层都重新推到harbor上吗？答案是no。registry 会做一个判断，如果层的校验值一致，其实会提示Layer already exists。直接跳过。</p>
+<p><img src="https://i.loli.net/2020/04/17/r8MzLThsmaYwNi5.png" alt="image.png"></p>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/13/alertmanager-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6/">alertmanager-配置文件</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-13</time><div class="content"><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">KJ</span></span><br></pre></td></tr></table></figure>
+
+<p>q    </p>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/13/%E7%BD%91%E7%BB%9C%E5%9C%B0%E5%9D%80%E5%88%86%E9%85%8D/">网络地址分配</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-13</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/ipv4/">ipv4</a></span><div class="content"><p>A类地址： 1.0.0.0 ～ 127.255.255.255</p>
+<p>B类地址：128.0.0.0 ～ 191.255.255.255</p>
+<p>C类地址：192.0.0.0 ～ 223.255.255.255</p>
+<p>D类地址：224.0.0.0 ～ 239.255.255.255 （用作广播用途） </p>
+<p>E类地址：240.0.0.0 ～ 255.255.255.255（保留）</p>
+<p>这就将全球的所有ipv4地址划分成了5类，那么又再其中的部分划出来，给局域网使用。</p>
+<p>A类地址中的：  10.0.0.0/8</p>
+<p>B类地址中的： 127.16.0.0/12</p>
+<p>C类地址中的： 192.168.0.0/16 </p>
+<p>接下来快速计算一下： 192.168.1.0/255.255.255.252 ，即掩码为30</p>
+<blockquote>
+<p>网络地址：192.168.0000 0001.0</p>
+<p>掩码：1111 1111.1111 1111.1111 1111.1111 1100</p>
+<p>与运算后结果，即为网络IP：192.168.1.0</p>
+<p>根据判断两个ip是否在同一个子网的方法：与掩码运算后，结果一致，就是同一个子网内。</p>
+<p>这么推理。</p>
+<p>最小IP： 192.168.1.0</p>
+<p>最大IP：192.168.1.255</p>
+<p>当然最大最小，分别留作网络ID还有广播地址。</p>
+<p>子网数：</p>
+</blockquote>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/13/mysql%E4%BA%8B%E5%8A%A1/">MySQL事务隔离级别</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-13</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/mysql/">mysql</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/">事务隔离级别</a></span><div class="content"><ol>
+<li><p>什么是<strong>脏读</strong>： 读到没有commit的数据</p>
+</li>
+<li><p>什么是<strong>不可重复读</strong>：同一个事务中，两次读取到的数据不一样。</p>
+</li>
+<li><p>什么是<strong>幻读</strong>： <del>同一个事务中，两次读取到的数据不一样。</del>这个流程看起来和不可重复读差不多，但幻读强调的集合的增减，而不是单独一条数据的修改。最常见的场景便是</p>
+</li>
+</ol>
+<p>事务的隔离级别</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select @@global.tx_isolation;</span><br></pre></td></tr></table></figure>
+
+<p>级别逐级别提高，越高数据隔离的越彻底。可是代价是付出性能。</p>
+<ul>
+<li><p>value 为0</p>
+<p>读未提交（Read Uncommitted），在这个级别下，所有事务都能看到其他未提交的事务的数据，基本很少用到。</p>
+</li>
+<li><p>value 为1</p>
+<p>一个事务只能看见已经提交事务所做的改变。解决脏读的问题，存在不可重复读，幻读的问题。</p>
+</li>
+<li><p>可重复读 REPEATABLE-READ | 2</p>
+<p>MySQL默认的级别，解决脏读，不可重复读。但是存在幻读的。接下来就是要讨论如何避免了。</p>
+</li>
+<li><p>序列化 SERIALIZABLE | 3</p>
+<p>强迫事务排序，串行执行事务，从而杜绝上面的所有问题，但是会带来大量的等待，基本没有使用。</p>
+</li>
+</ul>
+<p>在RR（READTABLE-READ）级别下，如何避免幻读，答案是显式加锁。</p>
+<p>简单的场景：</p>
+<p>A 事务：查询表是否存在id=10000，如果无，就插入数据。</p>
+<p>就在插入的前一刻，另外一个事务插入了id=10000的数据，此刻A事务就会莫名收到数据已经存在的错误，也无法插入成功。这就是典型的幻读了。如何解决呢，用SELECT FOR UPDATE，无论数据是否存在，都会被加上锁。（当记录不存在的时候，mysql 会给索引加上gap间隙锁，对此可以模拟一下哦）</p>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/10/promethues-operator/">promethues-operator</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-10</time><div class="content"></div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/08/calico-network/">calico network</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-08</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/calico%E7%BD%91%E7%BB%9C/">calico网络</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E9%9A%A7%E9%81%93/">隧道</a></span><div class="content"><h2 id="在此对calico的网络模式做一个简单的回顾。"><a href="#在此对calico的网络模式做一个简单的回顾。" class="headerlink" title="在此对calico的网络模式做一个简单的回顾。"></a>在此对calico的网络模式做一个简单的回顾。</h2><ul>
+<li>calico 支持 vxlan和IP in IP两种协议，默认是IP in IP协议的IPIP模式，在不支持IP in IP的情况下，会切换为vxlan，比如azure目前就不支持IP in IP。</li>
+<li>xlan协议下，报文首部比IP in IP协议的首部要占用多空间。所以此处涉及到集群中网络数据包的MTU Size。</li>
+<li>对于calico, 在IP in IP协议下，还能再分为两种模式IPIP 以及BGP。 前者，基于报文首部封装，需要隧道封装。一个基于二层网络，直接而成可达。</li>
+</ul>
+<h2 id="ipip为什么称之为隧道呢？"><a href="#ipip为什么称之为隧道呢？" class="headerlink" title="ipip为什么称之为隧道呢？"></a>ipip为什么称之为隧道呢？</h2><p>ipip和vxlan的wiki上，都涉及到tunnel。</p>
+<p>其实隧道并不能改变网络质量。只是营造出两个节点像是中间像是有一条隧道般，直接连接起来。</p>
+<p>比如xlan，就是通过三层网络实现虚拟的二层的端对端连接。 IPIP也是一样。</p>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/04/nginx-http2-0/">Nginx HTTP2.0</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-04</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/nginx/">nginx</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/http2-0/">http2.0</a></span><div class="content"><p>nginx 开启http2.0</p>
+<p>前提：</p>
+<ul>
+<li><p>要开启HTTP/2需要nginx版本在1.10.0以上，且需要openssl版本在1.0.2以上编译。</p>
+</li>
+<li><p><strong>http2.0只支持开启了https的网站</strong></p>
+</li>
+<li><p>nginx的开启ssl的配置</p>
+<p>可参考1：<a href="https://ssl-config.mozilla.org/" target="_blank" rel="noopener">https://ssl-config.mozilla.org/</a></p>
+<p>可参考2：<a href="https://juejin.im/entry/5b5ae460e51d45195423ecca" target="_blank" rel="noopener">https://juejin.im/entry/5b5ae460e51d45195423ecca</a></p>
+</li>
+</ul>
+<p>2020年4月13日 下午12:13:38 Update：</p>
+<p>在CLOUDFRONT–&gt; ELB–〉nginx–〉 springcloud 的架构下。 https到了Cloudfront就被卸载了，elb往后的所有都是走http协议。<strong>意味着其中只有ELB到客户端才是http2.0协议，ELB后的都是http1.1协议。</strong>这一点cloudfront配置的时候，也有明确的写了呢！</p>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/03/http2-0/">HTTP2.0</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-03</time><div class="content"><p>http2.0 解决了什么问题呢？</p>
+<p>首先看看采用http2的两个效果，</p>
+<p><a href="https://http2.golang.org/gophertiles" target="_blank" rel="noopener">https://http2.golang.org/gophertiles</a></p>
+<p><a href="https://http2.akamai.com/demo" target="_blank" rel="noopener">https://http2.akamai.com/demo</a></p>
+<ul>
+<li><p><strong>对头阻塞</strong></p>
+<p>浏览器，比如chrome，默认建立6个连接。现在打开一个网页，经常见到上百个请求。那么http1.1时，就依赖着这6个连接，获取着上100个资源。然而6个连接，并没有根本上解决http的对头阻塞，因为http基于tcp，tcp的数据传输是由seq的，必须按照顺序接受。只是现在打饭的窗口，增加到6个而已。</p>
+<ul>
+<li><p>为了优化打开速度，于是出现了采用多个域名来分担连接数的方式。比如打开demo.com, 那么静态资源通过域名static.demo.com 与动态资源 api.demo.com，分开处理，这样就有12个连接了。当然有甚至着用了更多的静态资源站点。</p>
+</li>
+<li><p>还有一种叫雪碧图 /CSS Sprite 的优化方式，简单描述就是小图，拼成大图。减少了请求文件的数量，不过现在这种也越来越少被用到了。</p>
+</li>
+</ul>
+<p>http2.0，引入了数据帧以及流式的处理方式。在应用层将数据拆封为帧，每个消息都被拆分成若干个帧进行传输，每个帧都分配一个序号。（在http1.1时，应用层的请求并没有被编号哦，而是发送后，等回应，再接着发）每个帧在传输是属于一个数据流，而一个连接上可以存在多个流，各个帧在流和连接上独立传输，到达之后在组装成消息，这样就避免了请求/响应阻塞。当然如果http2.0是基于tcp的话，还是会有对头阻塞的情况，毕竟tcp必须按序号接受消息。</p>
+</li>
+</ul>
+<p><img src="https://i.loli.net/2020/04/04/ZiMdkPHBma5CzU4.png" alt="image.png"></p>
+<ul>
+<li><strong>头部压缩</strong><ul>
+<li>用数字来代替请求头的值，比如2代表method：get</li>
+<li>并且一个连接中， 不再需要重复传输header，比如user-agent的safari…… ，只传输一次，这样也可以大大的节省带宽。</li>
+<li></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p><strong>主动推送</strong></p>
+<p>当用户访问index.html时，在http1.1的时代，浏览器解析后，还要再向服务器请求关联的静态资源，然而http2.0，从服务器端，就主动推送过去了</p>
+</li>
+</ul>
+<p><img src="https://i.loli.net/2020/04/04/TvK1VzXyFCablSL.png" alt="image.png"></p>
+<h3 id="撸起袖子开干"><a href="#撸起袖子开干" class="headerlink" title="撸起袖子开干"></a>撸起袖子开干</h3><p>从运维角度看待，我们也应该主动的推动http2，尤其在大规模并发的情况下，http的每一个小优化，都会被大规模的流量而放大。比如我们常用的前端服务组件nginx也早已支持http2.0，客户端的主流浏览器也早已支持。</p>
+<p>我们采用的aws cloudfront ，也支持http2.0，那何不采取主动权呢。另一点，在http2.0主动推送的场景下，websocket，是否会被取代呢？拭目以待。技术的发展真的永无止境呢。</p>
+<p>相关链接： <a href="https://youtu.be/r5oT_2ndjms" target="_blank" rel="noopener">https://youtu.be/r5oT_2ndjms</a></p>
+</div><hr></div><nav id="pagination"><div class="pagination"><a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-chevron-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-chevron-right"></i></a></div></nav></div></div><footer class="footer-bg" style="background-image: url(https://tva1.sinaimg.cn/large/007S8ZIlgy1get1mqmvxij31hc0u0q7i.jpg)"><div class="layout" id="footer"><div class="copyright">&copy;2020 By Chandler Kwok</div><div class="framework-info"><span>Driven - </span><a href="http://hexo.io" target="_blank" rel="noopener"><span>Hexo</span></a><span class="footer-separator">|</span><span>Theme - </span><a href="https://github.com/Molunerfinn/hexo-theme-melody" target="_blank" rel="noopener"><span>Melody</span></a></div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_site_uv"><i class="fa fa-user"></i><span id="busuanzi_value_site_uv"></span><span></span></span><span class="footer-separator">|</span><span id="busuanzi_container_site_pv"><i class="fa fa-eye"></i><span id="busuanzi_value_site_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.7.0"></script><script src="/js/fancybox.js?version=1.7.0"></script><script src="/js/sidebar.js?version=1.7.0"></script><script src="/js/copy.js?version=1.7.0"></script><script src="/js/fireworks.js?version=1.7.0"></script><script src="/js/transition.js?version=1.7.0"></script><script src="/js/scroll.js?version=1.7.0"></script><script src="/js/head.js?version=1.7.0"></script><script>if(/Android|webOS|iPhone|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+  $('#top-container').addClass('is-mobile')
+}</script></body></html>

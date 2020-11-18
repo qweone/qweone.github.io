@@ -1,0 +1,48 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content="HTTP2.0"><meta name="keywords" content=""><meta name="author" content="Chandler Kwok"><meta name="copyright" content="Chandler Kwok"><title>HTTP2.0 | 郭大瞎のBlog</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.7.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.7.0"><meta name="format-detection" content="telephone=no"><meta http-equiv="x-dns-prefetch-control" content="on"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  }
+} </script><meta name="generator" content="Hexo 4.2.0"></head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="true"><div class="toggle-sidebar-info text-center"><span data-toggle="Toggle article">Toggle site</span><hr></div><div class="sidebar-toc"><div class="sidebar-toc__title">Catalog</div><div class="sidebar-toc__progress"><span class="progress-notice">You've read</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar"></div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#撸起袖子开干"><span class="toc-number">1.</span> <span class="toc-text">撸起袖子开干</span></a></li></ol></div></div><div class="author-info hide"><div class="author-info__avatar text-center"><img src="https://i.loli.net/2020/05/05/r8BpGnwzsW25QSN.jpg"></div><div class="author-info__name text-center">Chandler Kwok</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">Articles</span><span class="pull-right">52</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">Tags</span><span class="pull-right">52</span></a></div></div></div><div id="content-outer"><div id="top-container" style="background-image: url(https://tva1.sinaimg.cn/large/007S8ZIlgy1get1mqmvxij31hc0u0q7i.jpg)"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">郭大瞎のBlog</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/categories">Categories</a></span><span class="pull-right"></span></div><div id="post-info"><div id="post-title">HTTP2.0</div><div id="post-meta"><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-03</time></div></div></div><div class="layout" id="content-inner"><article id="post"><div class="article-container" id="post-content"><p>http2.0 解决了什么问题呢？</p>
+<p>首先看看采用http2的两个效果，</p>
+<p><a href="https://http2.golang.org/gophertiles" target="_blank" rel="noopener">https://http2.golang.org/gophertiles</a></p>
+<p><a href="https://http2.akamai.com/demo" target="_blank" rel="noopener">https://http2.akamai.com/demo</a></p>
+<ul>
+<li><p><strong>对头阻塞</strong></p>
+<p>浏览器，比如chrome，默认建立6个连接。现在打开一个网页，经常见到上百个请求。那么http1.1时，就依赖着这6个连接，获取着上100个资源。然而6个连接，并没有根本上解决http的对头阻塞，因为http基于tcp，tcp的数据传输是由seq的，必须按照顺序接受。只是现在打饭的窗口，增加到6个而已。</p>
+<ul>
+<li><p>为了优化打开速度，于是出现了采用多个域名来分担连接数的方式。比如打开demo.com, 那么静态资源通过域名static.demo.com 与动态资源 api.demo.com，分开处理，这样就有12个连接了。当然有甚至着用了更多的静态资源站点。</p>
+</li>
+<li><p>还有一种叫雪碧图 /CSS Sprite 的优化方式，简单描述就是小图，拼成大图。减少了请求文件的数量，不过现在这种也越来越少被用到了。</p>
+</li>
+</ul>
+<p>http2.0，引入了数据帧以及流式的处理方式。在应用层将数据拆封为帧，每个消息都被拆分成若干个帧进行传输，每个帧都分配一个序号。（在http1.1时，应用层的请求并没有被编号哦，而是发送后，等回应，再接着发）每个帧在传输是属于一个数据流，而一个连接上可以存在多个流，各个帧在流和连接上独立传输，到达之后在组装成消息，这样就避免了请求/响应阻塞。当然如果http2.0是基于tcp的话，还是会有对头阻塞的情况，毕竟tcp必须按序号接受消息。</p>
+</li>
+</ul>
+<p><img src="https://i.loli.net/2020/04/04/ZiMdkPHBma5CzU4.png" alt="image.png"></p>
+<ul>
+<li><strong>头部压缩</strong><ul>
+<li>用数字来代替请求头的值，比如2代表method：get</li>
+<li>并且一个连接中， 不再需要重复传输header，比如user-agent的safari…… ，只传输一次，这样也可以大大的节省带宽。</li>
+<li></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p><strong>主动推送</strong></p>
+<p>当用户访问index.html时，在http1.1的时代，浏览器解析后，还要再向服务器请求关联的静态资源，然而http2.0，从服务器端，就主动推送过去了</p>
+</li>
+</ul>
+<p><img src="https://i.loli.net/2020/04/04/TvK1VzXyFCablSL.png" alt="image.png"></p>
+<h3 id="撸起袖子开干"><a href="#撸起袖子开干" class="headerlink" title="撸起袖子开干"></a>撸起袖子开干</h3><p>从运维角度看待，我们也应该主动的推动http2，尤其在大规模并发的情况下，http的每一个小优化，都会被大规模的流量而放大。比如我们常用的前端服务组件nginx也早已支持http2.0，客户端的主流浏览器也早已支持。</p>
+<p>我们采用的aws cloudfront ，也支持http2.0，那何不采取主动权呢。另一点，在http2.0主动推送的场景下，websocket，是否会被取代呢？拭目以待。技术的发展真的永无止境呢。</p>
+<p>相关链接： <a href="https://youtu.be/r5oT_2ndjms" target="_blank" rel="noopener">https://youtu.be/r5oT_2ndjms</a></p>
+</div></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="mailto:undefined">Chandler Kwok</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="http://yoursite.com/2020/04/03/http2-0/">http://yoursite.com/2020/04/03/http2-0/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="post-meta__tag-list"></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2020/04/04/nginx-http2-0/"><i class="fa fa-chevron-left">  </i><span>Nginx HTTP2.0</span></a></div><div class="next-post pull-right"><a href="/2020/04/03/http-%E7%BC%93%E5%AD%98/"><span>http之缓存</span><i class="fa fa-chevron-right"></i></a></div></nav></div></div><footer class="footer-bg" style="background-image: url(https://tva1.sinaimg.cn/large/007S8ZIlgy1get1mqmvxij31hc0u0q7i.jpg)"><div class="layout" id="footer"><div class="copyright">&copy;2020 By Chandler Kwok</div><div class="framework-info"><span>Driven - </span><a href="http://hexo.io" target="_blank" rel="noopener"><span>Hexo</span></a><span class="footer-separator">|</span><span>Theme - </span><a href="https://github.com/Molunerfinn/hexo-theme-melody" target="_blank" rel="noopener"><span>Melody</span></a></div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_page_pv"><i class="fa fa-file"></i><span id="busuanzi_value_page_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.7.0"></script><script src="/js/fancybox.js?version=1.7.0"></script><script src="/js/sidebar.js?version=1.7.0"></script><script src="/js/copy.js?version=1.7.0"></script><script src="/js/fireworks.js?version=1.7.0"></script><script src="/js/transition.js?version=1.7.0"></script><script src="/js/scroll.js?version=1.7.0"></script><script src="/js/head.js?version=1.7.0"></script><script>if(/Android|webOS|iPhone|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+  $('#top-container').addClass('is-mobile')
+}</script></body></html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content="mysql index原理"><meta name="keywords" content=""><meta name="author" content="Chandler Kwok"><meta name="copyright" content="Chandler Kwok"><title>mysql index原理 | 郭大瞎のBlog</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.7.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.7.0"><meta name="format-detection" content="telephone=no"><meta http-equiv="x-dns-prefetch-control" content="on"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  }
+} </script><meta name="generator" content="Hexo 4.2.0"></head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="true"><div class="toggle-sidebar-info text-center"><span data-toggle="Toggle article">Toggle site</span><hr></div><div class="sidebar-toc"><div class="sidebar-toc__title">Catalog</div><div class="sidebar-toc__progress"><span class="progress-notice">You've read</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar"></div></div><div class="sidebar-toc__content"></div></div><div class="author-info hide"><div class="author-info__avatar text-center"><img src="https://i.loli.net/2020/05/05/r8BpGnwzsW25QSN.jpg"></div><div class="author-info__name text-center">Chandler Kwok</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">Articles</span><span class="pull-right">52</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">Tags</span><span class="pull-right">52</span></a></div></div></div><div id="content-outer"><div id="top-container" style="background-image: url(https://tva1.sinaimg.cn/large/007S8ZIlgy1get1mqmvxij31hc0u0q7i.jpg)"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">郭大瞎のBlog</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/categories">Categories</a></span><span class="pull-right"></span></div><div id="post-info"><div id="post-title">mysql index原理</div><div id="post-meta"><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-03</time></div></div></div><div class="layout" id="content-inner"><article id="post"><div class="article-container" id="post-content"><p><strong>mysql 索引原理之记忆</strong></p>
+<p>相关的算法： <a href="https://www.cs.usfca.edu/~galles/visualization/xBST.html" target="_blank" rel="noopener">https://www.cs.usfca.edu/~galles/visualization/xBST.html</a></p>
+<p><strong>二叉树</strong></p>
+<p><img src="https://i.loli.net/2020/04/03/NbCh1zGst8oMYe5.png" alt="image-20200403184935952.png"></p>
+<p>如上图，为二叉树的数据结构，但是二叉树并不是mysql 索引底层使用的数据结构。</p>
+<p>原因是二叉树，在某些场景下会出现问题。比如下面这个场景，自增长的主键，数据二叉树只能从头开始遍历。<br><img src="https://i.loli.net/2020/04/03/UvCzJYW9jNqVnyE.png" alt="image-20200403185445753.png"></p>
+<p><strong>红黑树-二叉平衡树</strong></p>
+<ul>
+<li>自动调整高度，减少查找的深度。</li>
+</ul>
+<p><img src="https://i.loli.net/2020/04/03/msaEXxKMvgqt5VA.gif" alt="red_black-tree.gif"></p>
+<p><strong>B-Tree</strong> </p>
+<p>实际上，mysql 采用的上B+ Tree，B树的data也存储在节点上，占用了空间。下图中的特点，与B+Tree比对就很明显了。</p>
+<p><img src="https://i.loli.net/2020/04/03/YTxAtRZz3V9jpFH.png" alt="image-20200403190342219.png"></p>
+<p><strong>B+ Tree</strong></p>
+<p>Mysql 采用的是B+ Tree，</p>
+<ul>
+<li>尤其注意叶子结点，包含所有的索引字段。所以如果查询的字段，仅包含索引字段，那么mysql是不用再次去磁盘读取数据的。</li>
+<li>叶子结点之间是有双向指针的。所以查询where id &gt; xx。这种情况是有帮助的。</li>
+<li>如下图，查找select data from A where id =30. mysql 载入根节点后，从头开始遍历，发现30介于15与56之间，于是顺着地址再次从磁盘中取出下一个结点，15～49的索引。同理继续操作，直接在叶子结点中，查找到id=30的字段数据。</li>
+<li>叶子结点之间的双向链指针，是为了应对where id between 28 to 30，这种场景。这样就不会回到上一个结点中，重新查找相邻结点了。这个也是为什么mysql还有一种索引类型-hash索引。hash 索引通过算法能直接定位到根节点，速度飞快，但是却无法应付范围查找。</li>
+</ul>
+<p><img src="https://i.loli.net/2020/04/03/UvmlX4GAESkVrYF.png" alt="image-UvmlX4GAESkVrYF.png"></p>
+<p><strong>组合索引</strong></p>
+<p>下图为组合索引的例子：(id, jobs, date)， id从小到大递增，id相同时，按jobs从小到大排列，jobs相同时，再按date从小到大排列。所以mysql调优中的<strong>最左前缀</strong>原则， 比如下图中，有一个数据（10004，Assistant, 2002-03-01），那么它应该再叶子结点的最右侧。此时如果查找where name = Assistant。可见索引也排不上用场。</p>
+<p><img src="https://i.loli.net/2020/04/03/2vLOkJBShujQXIs.png" alt="image.png"></p>
+</div></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="mailto:undefined">Chandler Kwok</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="http://yoursite.com/2020/04/03/mysql-index%E5%8E%9F%E7%90%86/">http://yoursite.com/2020/04/03/mysql-index%E5%8E%9F%E7%90%86/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="post-meta__tag-list"></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2020/04/03/tls/"><i class="fa fa-chevron-left">  </i><span>tls 流程</span></a></div><div class="next-post pull-right"><a href="/2020/04/03/tcp-%E6%8B%A5%E5%A1%9E/"><span>TCP 拥塞控制</span><i class="fa fa-chevron-right"></i></a></div></nav></div></div><footer class="footer-bg" style="background-image: url(https://tva1.sinaimg.cn/large/007S8ZIlgy1get1mqmvxij31hc0u0q7i.jpg)"><div class="layout" id="footer"><div class="copyright">&copy;2020 By Chandler Kwok</div><div class="framework-info"><span>Driven - </span><a href="http://hexo.io" target="_blank" rel="noopener"><span>Hexo</span></a><span class="footer-separator">|</span><span>Theme - </span><a href="https://github.com/Molunerfinn/hexo-theme-melody" target="_blank" rel="noopener"><span>Melody</span></a></div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_page_pv"><i class="fa fa-file"></i><span id="busuanzi_value_page_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.7.0"></script><script src="/js/fancybox.js?version=1.7.0"></script><script src="/js/sidebar.js?version=1.7.0"></script><script src="/js/copy.js?version=1.7.0"></script><script src="/js/fireworks.js?version=1.7.0"></script><script src="/js/transition.js?version=1.7.0"></script><script src="/js/scroll.js?version=1.7.0"></script><script src="/js/head.js?version=1.7.0"></script><script>if(/Android|webOS|iPhone|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+  $('#top-container').addClass('is-mobile')
+}</script></body></html>
