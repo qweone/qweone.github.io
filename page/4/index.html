@@ -7,105 +7,7 @@
     error: 'Copy error',
     noSupport: 'The browser does not support'
   }
-} </script><meta name="generator" content="Hexo 4.2.0"></head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="false"><div class="author-info"><div class="author-info__avatar text-center"><img src="https://i.loli.net/2020/05/05/r8BpGnwzsW25QSN.jpg"></div><div class="author-info__name text-center">Chandler Kwok</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">Articles</span><span class="pull-right">52</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">Tags</span><span class="pull-right">52</span></a></div></div></div><nav id="nav" style="background-image: url(https://tva1.sinaimg.cn/large/007S8ZIlgy1get1mqmvxij31hc0u0q7i.jpg)"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">郭大瞎のBlog</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/categories">Categories</a></span><span class="pull-right"></span></div><div id="site-info"><div id="site-title">郭大瞎のBlog</div><div id="site-sub-title">熟能生巧</div></div></nav><div id="content-outer"><div class="layout" id="content-inner"><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/15/aws-s3-static-website/">aws s3 static website</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-15</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/aws/">aws</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/s3/">s3</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/cloudfront/">cloudfront</a></span><div class="content"><p>Aws S3 加上cloudfront，可以直接代替nginx。并且有更高的可用性。于是告诉给架构师这个方案后，就开始配置了。</p>
-<ol>
-<li>开bucket，设置静态托管</li>
-</ol>
-<p><img src="https://i.loli.net/2020/04/15/hT2kLX5bKEQNug6.png" alt="image.png"></p>
-<ol start="2">
-<li><p>设置bucket policy，所有资源均为public</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">"Version"</span>: <span class="string">"2012-10-17"</span>,</span><br><span class="line">    <span class="attr">"Id"</span>: <span class="string">"Policy1586756429373"</span>,</span><br><span class="line">    <span class="attr">"Statement"</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">"Sid"</span>: <span class="string">"Stmt1586756xxxx5"</span>,</span><br><span class="line">            <span class="attr">"Effect"</span>: <span class="string">"Allow"</span>,</span><br><span class="line">            <span class="attr">"Principal"</span>: <span class="string">"*"</span>,</span><br><span class="line">            <span class="attr">"Action"</span>: <span class="string">"s3:GetObject"</span>,</span><br><span class="line">            <span class="attr">"Resource"</span>: <span class="string">"arn:aws:s3:::xxx-speedup/*"</span></span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>开始Cloudfront，限定只允许GET，HEAD 两种method。还有开启Gzip。暂时用最简单的配置。</p>
-<p><img src="https://i.loli.net/2020/04/15/emMT4YEbvzoxFZA.png" alt="image.png"></p>
-</li>
-<li><p>上传资源到S3</p>
-<p>Jenkins plugin 本有一个S3插件，可是依赖maven 3.5版本，由于现在开发团队在用3.4，于是放弃该插件。</p>
-<p>改用传统的步骤：jenkins执行shell，</p>
-<p>AWS_ACCESS_KEY_ID与AWS_SECRET_ACCESS_KEY，就取巧通过参数化构建过程带入吧！恰巧这个插件会将参数设置为环境变量，所以就这么办了。（Pipeline + Credentials会更加优雅）</p>
-<p>注意上传前，自己先gzip一下，因为S3可是不会自动帮你压缩的。当然这个也可以通过event驱动Lambda来优雅实现。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">find ./ -type f -exec gzip "&#123;&#125;" \; -exec mv "&#123;&#125;.gz" "&#123;&#125;" \;</span><br><span class="line">aws s3  mv  ./  s3://xxx-speedup  --recursive --exclude ".git/*"   --content-encoding "gzip"</span><br></pre></td></tr></table></figure>
-
-<p><img src="https://i.loli.net/2020/04/15/wA5IPakjCm2F8fQ.png" alt="image.png"></p>
-</li>
-</ol>
-</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/14/mvcc/">mvcc</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-14</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/mvcc/">mvcc</a></span><div class="content"><p>——-可爱的分割线——–</p>
-</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/14/why-docker/">WHY docker？</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-14</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/docker/">docker</a></span><div class="content"><p>Docker/Kubernetes 天天弄，可是又有多少底层技术深刻的记在心里呢。</p>
-<p>原理：COW （Copy On Write）</p>
-<p>Docker 镜像由多个只读层叠加而成，启动容器时，Docker会加载只读镜像层，并在镜像栈顶部添加一个读写成。如果运行的容器修改了一个已经存在的文件。那么文件就会从只读层复制到读写层，该文件的只读版本依然存在。</p>
-<p>理解原理后，便是要思考如何运用到工作中🥶。</p>
-<ul>
-<li><p>容器最后的读写层，可能一般包含了修改的文件。 所以应该避免将容器，docker commit 的方式提交到registry。</p>
-</li>
-<li><p>docker ps -s 可以看到容器总共的size（含读写层），以及读写层的size。</p>
-</li>
-<li><p>docker history 看到的 某些层为missing，没有标注ID。其实是因为这些层不在这台电脑上封装。</p>
-<p><img src="https://i.loli.net/2020/04/17/PuK8WE9sbGhyBzd.png" alt="image.png"></p>
-</li>
-</ul>
-<p>base 镜像 - Linux最小安装的Linux发行版</p>
-<ul>
-<li><p>在Dockerhub上拉去一个centos镜像，看到只有200mb。困惑。其实这是因为docker镜像在运行时，使用的是docker宿主机的kernel。Linux操作系统由内核空间和用户空间组成。</p>
-<p><img src="https://i.loli.net/2020/04/17/LgZ3wEkXtsrhCnj.png" alt="image.png"></p>
-</li>
-</ul>
-<h3 id="My-Question"><a href="#My-Question" class="headerlink" title="My Question"></a>My Question</h3><p>那么相同的两个镜像，做了少许改动后，push到harbor，客户端需要把镜像每一层都重新推到harbor上吗？答案是no。registry 会做一个判断，如果层的校验值一致，其实会提示Layer already exists。直接跳过。</p>
-<p><img src="https://i.loli.net/2020/04/17/r8MzLThsmaYwNi5.png" alt="image.png"></p>
-</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/13/alertmanager-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6/">alertmanager-配置文件</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-13</time><div class="content"><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">KJ</span></span><br></pre></td></tr></table></figure>
-
-<p>q    </p>
-</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/13/%E7%BD%91%E7%BB%9C%E5%9C%B0%E5%9D%80%E5%88%86%E9%85%8D/">网络地址分配</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-13</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/ipv4/">ipv4</a></span><div class="content"><p>A类地址： 1.0.0.0 ～ 127.255.255.255</p>
-<p>B类地址：128.0.0.0 ～ 191.255.255.255</p>
-<p>C类地址：192.0.0.0 ～ 223.255.255.255</p>
-<p>D类地址：224.0.0.0 ～ 239.255.255.255 （用作广播用途） </p>
-<p>E类地址：240.0.0.0 ～ 255.255.255.255（保留）</p>
-<p>这就将全球的所有ipv4地址划分成了5类，那么又再其中的部分划出来，给局域网使用。</p>
-<p>A类地址中的：  10.0.0.0/8</p>
-<p>B类地址中的： 127.16.0.0/12</p>
-<p>C类地址中的： 192.168.0.0/16 </p>
-<p>接下来快速计算一下： 192.168.1.0/255.255.255.252 ，即掩码为30</p>
-<blockquote>
-<p>网络地址：192.168.0000 0001.0</p>
-<p>掩码：1111 1111.1111 1111.1111 1111.1111 1100</p>
-<p>与运算后结果，即为网络IP：192.168.1.0</p>
-<p>根据判断两个ip是否在同一个子网的方法：与掩码运算后，结果一致，就是同一个子网内。</p>
-<p>这么推理。</p>
-<p>最小IP： 192.168.1.0</p>
-<p>最大IP：192.168.1.255</p>
-<p>当然最大最小，分别留作网络ID还有广播地址。</p>
-<p>子网数：</p>
-</blockquote>
-</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/13/mysql%E4%BA%8B%E5%8A%A1/">MySQL事务隔离级别</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-13</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/mysql/">mysql</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/">事务隔离级别</a></span><div class="content"><ol>
-<li><p>什么是<strong>脏读</strong>： 读到没有commit的数据</p>
-</li>
-<li><p>什么是<strong>不可重复读</strong>：同一个事务中，两次读取到的数据不一样。</p>
-</li>
-<li><p>什么是<strong>幻读</strong>： <del>同一个事务中，两次读取到的数据不一样。</del>这个流程看起来和不可重复读差不多，但幻读强调的集合的增减，而不是单独一条数据的修改。最常见的场景便是</p>
-</li>
-</ol>
-<p>事务的隔离级别</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select @@global.tx_isolation;</span><br></pre></td></tr></table></figure>
-
-<p>级别逐级别提高，越高数据隔离的越彻底。可是代价是付出性能。</p>
-<ul>
-<li><p>value 为0</p>
-<p>读未提交（Read Uncommitted），在这个级别下，所有事务都能看到其他未提交的事务的数据，基本很少用到。</p>
-</li>
-<li><p>value 为1</p>
-<p>一个事务只能看见已经提交事务所做的改变。解决脏读的问题，存在不可重复读，幻读的问题。</p>
-</li>
-<li><p>可重复读 REPEATABLE-READ | 2</p>
-<p>MySQL默认的级别，解决脏读，不可重复读。但是存在幻读的。接下来就是要讨论如何避免了。</p>
-</li>
-<li><p>序列化 SERIALIZABLE | 3</p>
-<p>强迫事务排序，串行执行事务，从而杜绝上面的所有问题，但是会带来大量的等待，基本没有使用。</p>
-</li>
-</ul>
-<p>在RR（READTABLE-READ）级别下，如何避免幻读，答案是显式加锁。</p>
-<p>简单的场景：</p>
-<p>A 事务：查询表是否存在id=10000，如果无，就插入数据。</p>
-<p>就在插入的前一刻，另外一个事务插入了id=10000的数据，此刻A事务就会莫名收到数据已经存在的错误，也无法插入成功。这就是典型的幻读了。如何解决呢，用SELECT FOR UPDATE，无论数据是否存在，都会被加上锁。（当记录不存在的时候，mysql 会给索引加上gap间隙锁，对此可以模拟一下哦）</p>
-</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/10/promethues-operator/">promethues-operator</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-10</time><div class="content"></div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/08/calico-network/">calico network</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-08</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/calico%E7%BD%91%E7%BB%9C/">calico网络</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E9%9A%A7%E9%81%93/">隧道</a></span><div class="content"><h2 id="在此对calico的网络模式做一个简单的回顾。"><a href="#在此对calico的网络模式做一个简单的回顾。" class="headerlink" title="在此对calico的网络模式做一个简单的回顾。"></a>在此对calico的网络模式做一个简单的回顾。</h2><ul>
+} </script><meta name="generator" content="Hexo 4.2.0"></head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="false"><div class="author-info"><div class="author-info__avatar text-center"><img src="https://i.loli.net/2020/05/05/r8BpGnwzsW25QSN.jpg"></div><div class="author-info__name text-center">Chandler Kwok</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">Articles</span><span class="pull-right">44</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">Tags</span><span class="pull-right">48</span></a></div></div></div><nav id="nav" style="background-image: url(https://tva1.sinaimg.cn/large/007S8ZIlgy1get1mqmvxij31hc0u0q7i.jpg)"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">郭大瞎のBlog</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/categories">Categories</a></span><span class="pull-right"></span></div><div id="site-info"><div id="site-title">郭大瞎のBlog</div><div id="site-sub-title">熟能生巧</div></div></nav><div id="content-outer"><div class="layout" id="content-inner"><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/08/calico-network/">calico network</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-08</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/calico%E7%BD%91%E7%BB%9C/">calico网络</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E9%9A%A7%E9%81%93/">隧道</a></span><div class="content"><h2 id="在此对calico的网络模式做一个简单的回顾。"><a href="#在此对calico的网络模式做一个简单的回顾。" class="headerlink" title="在此对calico的网络模式做一个简单的回顾。"></a>在此对calico的网络模式做一个简单的回顾。</h2><ul>
 <li>calico 支持 vxlan和IP in IP两种协议，默认是IP in IP协议的IPIP模式，在不支持IP in IP的情况下，会切换为vxlan，比如azure目前就不支持IP in IP。</li>
 <li>xlan协议下，报文首部比IP in IP协议的首部要占用多空间。所以此处涉及到集群中网络数据包的MTU Size。</li>
 <li>对于calico, 在IP in IP协议下，还能再分为两种模式IPIP 以及BGP。 前者，基于报文首部封装，需要隧道封装。一个基于二层网络，直接而成可达。</li>
@@ -161,7 +63,148 @@
 <h3 id="撸起袖子开干"><a href="#撸起袖子开干" class="headerlink" title="撸起袖子开干"></a>撸起袖子开干</h3><p>从运维角度看待，我们也应该主动的推动http2，尤其在大规模并发的情况下，http的每一个小优化，都会被大规模的流量而放大。比如我们常用的前端服务组件nginx也早已支持http2.0，客户端的主流浏览器也早已支持。</p>
 <p>我们采用的aws cloudfront ，也支持http2.0，那何不采取主动权呢。另一点，在http2.0主动推送的场景下，websocket，是否会被取代呢？拭目以待。技术的发展真的永无止境呢。</p>
 <p>相关链接： <a href="https://youtu.be/r5oT_2ndjms" target="_blank" rel="noopener">https://youtu.be/r5oT_2ndjms</a></p>
-</div><hr></div><nav id="pagination"><div class="pagination"><a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-chevron-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-chevron-right"></i></a></div></nav></div></div><footer class="footer-bg" style="background-image: url(https://tva1.sinaimg.cn/large/007S8ZIlgy1get1mqmvxij31hc0u0q7i.jpg)"><div class="layout" id="footer"><div class="copyright">&copy;2020 By Chandler Kwok</div><div class="framework-info"><span>Driven - </span><a href="http://hexo.io" target="_blank" rel="noopener"><span>Hexo</span></a><span class="footer-separator">|</span><span>Theme - </span><a href="https://github.com/Molunerfinn/hexo-theme-melody" target="_blank" rel="noopener"><span>Melody</span></a></div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_site_uv"><i class="fa fa-user"></i><span id="busuanzi_value_site_uv"></span><span></span></span><span class="footer-separator">|</span><span id="busuanzi_container_site_pv"><i class="fa fa-eye"></i><span id="busuanzi_value_site_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.7.0"></script><script src="/js/fancybox.js?version=1.7.0"></script><script src="/js/sidebar.js?version=1.7.0"></script><script src="/js/copy.js?version=1.7.0"></script><script src="/js/fireworks.js?version=1.7.0"></script><script src="/js/transition.js?version=1.7.0"></script><script src="/js/scroll.js?version=1.7.0"></script><script src="/js/head.js?version=1.7.0"></script><script>if(/Android|webOS|iPhone|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) {
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/03/http-%E7%BC%93%E5%AD%98/">http之缓存</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-03</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/http/">http</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E7%BC%93%E5%AD%98/">缓存</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E9%9D%A2%E8%AF%95/">面试</a></span><div class="content"><p>http缓存，可不是简单的流量器与服务器通讯间的缓存机制。</p>
+<p>其中还涉及<strong>正向代理</strong>，<strong>反向代理</strong>，<strong>CDN</strong>的缓存节点的行为。</p>
+<p>缓存机制分为两种</p>
+<ol>
+<li><p><strong>强制缓存</strong></p>
+<p>流程： 浏览器发起请求，服务器返回response，respone header中的expired，表明这个资源的过期时间。后续再又请求时，就拿请求发起的时间与本地缓存文件的expired时间对比，没过期就直接展示给客户端。浏览器的F12。看到的就是（from disk cache）。</p>
+<p>其中涉及两个响应头：</p>
+<p>expired:</p>
+<p>http1.0时代的产物，且客户端与服务器的时间不是一定一致，返回具体的时间戳，这种做法考虑的并不周全。于是后续就有了新的cache-control头。</p>
+<p>这个expired ，曾经还遇到过一次故障，nginx上，开发将~* *.jpg设置为expired +30d。导致cdn缓存没有用上。比如图片A，在linux上的mtime 为Atime ，则返回的expired 头为 Atime +30d。 然而这个文件最后修改都好几个月前的事情了。</p>
+</li>
+</ol>
+<p>   cache-control： private、public、no-cacheno-store、max-age，默认认为private。</p>
+<p>   private:        客户端可以缓存（仅仅浏览器缓存，代理服务器不缓存）<br>   public:         客户端和代理服务器都可缓存</p>
+<p>   max-age=xxx:  缓存的内容将在 xxx 秒后失效（和private，public 结合一起使用）</p>
+<p>   no-cache:      需要使用对比缓存来验证缓存数据<br>   no-store:       所有内容都不会缓存，强制缓存，对比缓存都不会触发（很少用，除非明确不想让客户端缓存的资源）</p>
+<p>   下图中，便是例子，max-age单位为秒，采用默认的private, </p>
+<p>   <img src="https://i.loli.net/2020/04/06/IYfJ6FvbclRQC1s.png" alt="image.png"></p>
+<p>如果expires和cache-control同时存在，cache-control会覆盖expires。建议两个都写，cache-control是http1.1的头字段，expires是http1.0的头字段，都写兼容会好点。</p>
+<ol start="2">
+<li><p><strong>对比缓存</strong></p>
+<p>采用本地浏览器缓存时，都会更服务器发起一个请求，问一下资源是否被更新了。</p>
+<p>这里引申一点，在cdn的请求下，cdn也会向源站发起请求，用以对比缓存吗？</p>
+</li>
+</ol>
+<p>   响应码：</p>
+<p>   ​    * 200 代表服务器资源更新里，重新给你个新的。</p>
+<p>   ​    * 304 代表服务器资源没更新，告诉浏览器你本地可以用，仅仅有响应头，没有数据体，也能减少服务器压力，以及传输带宽。</p>
+<ul>
+<li><p><strong>Last-Modified / If-Modified-Since</strong></p>
+<p>服务器第一次响应时，返回Last-Modified： 2020-02-01 23:00:00 ，标示资源的最后修改时间。</p>
+<p>客户端下一次请求时，请求头，带上 If-Modified-Since： 2020-02-01 23:00:00。然后服务器判断后，返回200或是304</p>
+</li>
+<li><p><strong>Etag / If-None-Match</strong>（优先级高于Last-Modified / If-Modified-Since）</p>
+<p>服务器第一次响应时，返回Etag： xxxxxx，标示资源的维一标示，如果文件修改了Etag会更新。</p>
+<p>客户端下一次请求时，请求头，带上Etag： xxxxxx。然后服务器判断后，返回200或是304</p>
+</li>
+</ul>
+<p>看到这里，那对比缓存与强制缓存，那个优先级更高呢🧐，毕竟上图中， 你看Etag，Cache-control，Last-Modified都全部返回啊。答案是做个实验呗。 或者参考别人的：</p>
+<p><a href="https://www.imooc.com/article/details/id/22841" target="_blank" rel="noopener">https://www.imooc.com/article/details/id/22841</a></p>
+<hr>
+<p>2020/04/20更新：</p>
+<p>如何快速辩证用的是 强制缓存还是对比缓存。从返回码就可以看到端倪。显示来自缓存，并且返回码是200的，这个就是对比缓存了。而304就是对比缓存了。</p>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/03/tls/">tls 流程</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-03</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/tls/">tls</a></span><div class="content"><p><img src="https://i.loli.net/2020/04/04/8hUWD1mwcNsIuAV.png" alt="image.png"></p>
+<p>如上，三次握手连接后，开始进行建立tls的流程。</p>
+<p>整个流程涉及到对称加密，非对称加密，CA证书等等。</p>
+<p>通过用ab压测，相同的https和http接口时，https明显的cpu负载。</p>
+<p>从上图可以，其中一个步骤是，client 和 server 在协商tls 加密版本。这里就容易产生<strong>HTTPS协议降级</strong>攻击。攻击发起者的客户端假称自己不支持高版本的加密协议。对此<a href="https://www.ssllabs.com/ssltest//index.html" target="_blank" rel="noopener">SSL Labs</a>，就可以让你去检测自己的https的加密协议是否足够安全。</p>
+<p>🤯🤯🤯我曾一度困惑与所有客户端，访问服务端的时候，服务端都会返回公钥给客户端。凭借相同的公钥，A客户端加密的数据，B客户端，能否窃取后，用公钥解密呢。度娘上搜索，发现别人也有相同的疑问。但结论是不能。RSA是不对称加密算法的设计，便是公钥加密的信息，只有私钥才能解密，从而实现了数据可以的保密的到达拥有私钥的一方。即使被第三方截取，也无法解密。</p>
+<p><a href="http://www.ruanyifeng.com/blog/2013/06/rsa_algorithm_part_one.html" target="_blank" rel="noopener">http://www.ruanyifeng.com/blog/2013/06/rsa_algorithm_part_one.html</a></p>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/03/mysql-index%E5%8E%9F%E7%90%86/">mysql index原理</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-03</time><div class="content"><p><strong>mysql 索引原理之记忆</strong></p>
+<p>相关的算法： <a href="https://www.cs.usfca.edu/~galles/visualization/xBST.html" target="_blank" rel="noopener">https://www.cs.usfca.edu/~galles/visualization/xBST.html</a></p>
+<p><strong>二叉树</strong></p>
+<p><img src="https://i.loli.net/2020/04/03/NbCh1zGst8oMYe5.png" alt="image-20200403184935952.png"></p>
+<p>如上图，为二叉树的数据结构，但是二叉树并不是mysql 索引底层使用的数据结构。</p>
+<p>原因是二叉树，在某些场景下会出现问题。比如下面这个场景，自增长的主键，数据二叉树只能从头开始遍历。<br><img src="https://i.loli.net/2020/04/03/UvCzJYW9jNqVnyE.png" alt="image-20200403185445753.png"></p>
+<p><strong>红黑树-二叉平衡树</strong></p>
+<ul>
+<li>自动调整高度，减少查找的深度。</li>
+</ul>
+<p><img src="https://i.loli.net/2020/04/03/msaEXxKMvgqt5VA.gif" alt="red_black-tree.gif"></p>
+<p><strong>B-Tree</strong> </p>
+<p>实际上，mysql 采用的上B+ Tree，B树的data也存储在节点上，占用了空间。下图中的特点，与B+Tree比对就很明显了。</p>
+<p><img src="https://i.loli.net/2020/04/03/YTxAtRZz3V9jpFH.png" alt="image-20200403190342219.png"></p>
+<p><strong>B+ Tree</strong></p>
+<p>Mysql 采用的是B+ Tree，</p>
+<ul>
+<li>尤其注意叶子结点，包含所有的索引字段。所以如果查询的字段，仅包含索引字段，那么mysql是不用再次去磁盘读取数据的。</li>
+<li>叶子结点之间是有双向指针的。所以查询where id &gt; xx。这种情况是有帮助的。</li>
+<li>如下图，查找select data from A where id =30. mysql 载入根节点后，从头开始遍历，发现30介于15与56之间，于是顺着地址再次从磁盘中取出下一个结点，15～49的索引。同理继续操作，直接在叶子结点中，查找到id=30的字段数据。</li>
+<li>叶子结点之间的双向链指针，是为了应对where id between 28 to 30，这种场景。这样就不会回到上一个结点中，重新查找相邻结点了。这个也是为什么mysql还有一种索引类型-hash索引。hash 索引通过算法能直接定位到根节点，速度飞快，但是却无法应付范围查找。</li>
+</ul>
+<p><img src="https://i.loli.net/2020/04/03/UvmlX4GAESkVrYF.png" alt="image-UvmlX4GAESkVrYF.png"></p>
+<p><strong>组合索引</strong></p>
+<p>下图为组合索引的例子：(id, jobs, date)， id从小到大递增，id相同时，按jobs从小到大排列，jobs相同时，再按date从小到大排列。所以mysql调优中的<strong>最左前缀</strong>原则， 比如下图中，有一个数据（10004，Assistant, 2002-03-01），那么它应该再叶子结点的最右侧。此时如果查找where name = Assistant。可见索引也排不上用场。</p>
+<p><img src="https://i.loli.net/2020/04/03/2vLOkJBShujQXIs.png" alt="image.png"></p>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/04/03/tcp-%E6%8B%A5%E5%A1%9E/">TCP 拥塞控制</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-04-03</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/">网络原理</a></span><div class="content"><p>为了面试大厂，回顾tcp协议的细节。我用我自己的话来梳理tcp的拥塞控制。当然可能会有一些细节上不是那么到位。 </p>
+<p>TCP 拥塞的算法:</p>
+<ol>
+<li><p>慢启动</p>
+<p>网络的带宽上总是有限的，所有的连接都想尽量的抢占带宽。</p>
+<p>形象的场景，比如想要通过tcp连接发送一个1G的文件。假设双方资源都充足，tcp 一开始就以最大的带宽来传输吗？当然不是的。tcp协议会从逐渐增大拥塞窗口的大小，来试探到合适的拥塞窗口大小。</p>
+<p>Chandler: 什么是拥塞窗口呢？可以简单理解为一次连续发送多少个报文。拥塞窗口，会根据网络情况不停的调节，比如出现了丢包重传，那么拥塞窗口就会变小，如果连续没有丢包，就假设网络还有空间，拥塞窗口就会上调。</p>
+</li>
+<li><p>拥塞避免</p>
+<p>报文开始传输的时候，会按照指数来增长，比如第一次1个报文，第二次2个报文，第三次4个报文，第四次8个报文，直到数量到了初始门限值，就不再是指数增长，而会改为每次增加一个，来避免拥塞。这个数值会逐个增长，直到出现丢包重传。</p>
+</li>
+<li><p>快重传与快回复</p>
+<p>假设发送方传输了24个数据包，却只收到20个回应报文，此时网络并不是拥塞，而是传输中的超时或丢包。那么发送方等到数据包的发送计时器超时，再改用拥塞避免算法补发，这样处理传输效率不高。快重新与快恢复便是为了解决这种场景的。</p>
+<ul>
+<li><p>快重传是指，接受方接受到第1，第2个的数据包，却没有等来后面的第3个数据包，而是来了第四个，第五个，第六个。那么此时接受方会连续发出对第2个数据包的ack。发送方收到后，进而补发。</p>
+</li>
+<li><p>快恢复是指，在这种场景中，初始门限值不是变回1，而是发送窗口和初始门限值都下调为当前拥塞窗口的一半。</p>
+</li>
+</ul>
+</li>
+</ol>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/03/26/k8s-daemon-node-selector/">k8s daemon node selector</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-03-26</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/kubernetes/">kubernetes</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/daemon/">daemon</a></span><div class="content"><p><strong>Running Pods on Only Some Nodes</strong></p>
+<blockquote>
+<p>If you specify a <code>.spec.template.spec.nodeSelector</code>, then the DaemonSet controller will create Pods on nodes which match that <a href="https://kubernetes.io/docs/concepts/configuration/assign-pod-node/" target="_blank" rel="noopener">node selector</a>. Likewise if you specify a <code>.spec.template.spec.affinity</code>, then DaemonSet controller will create Pods on nodes which match that <a href="https://kubernetes.io/docs/concepts/configuration/assign-pod-node/" target="_blank" rel="noopener">node affinity</a>. If you do not specify either, then the DaemonSet controller will create Pods on all nodes.</p>
+</blockquote>
+<p>场景：</p>
+<p>内网K8S集群，应开发需求，每个应用环境，需要独立的consul，并且应用连接到node上consul-client。<strong>但是consul-client并不是所有node都要有，只是存在被选中的node上</strong>。</p>
+<p>从github <a href="https://github.com/hashicorp/consul-helm/releases" target="_blank" rel="noopener">consul-helm-chart</a>，修改helm value.yaml 文件，（良好的习惯，将helm的value.yaml上传到仓库）</p>
+<ul>
+<li>修改image 版本对应版本，以及storage class 等等</li>
+<li>另一处，修改client的nodeSelector（只在特定的节点，启动consul client）<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">322</span>   <span class="comment"># nodeSelector labels for client pod assignment, formatted as a multi-line string.</span></span><br><span class="line"><span class="number">323</span>   <span class="comment"># ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector</span></span><br><span class="line"><span class="number">324</span>   <span class="comment"># Example:</span></span><br><span class="line"><span class="number">325</span>   <span class="comment"># nodeSelector: |</span></span><br><span class="line"><span class="number">326</span>   <span class="comment">#   beta.kubernetes.io/arch: amd64</span></span><br><span class="line"><span class="attr">327   nodeSelector:</span> <span class="string">|</span></span><br><span class="line"><span class="attr">328       project:</span> <span class="string">dop-test</span></span><br></pre></td></tr></table></figure>
+
+
+
+</li>
+</ul>
+<ul>
+<li><p>下一步，我们需要让节点自动注册到自己node上的consul client上。需要pods能够获取到本机consul client 的IP。于是通过valueFrom🤓.</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">consul-example</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">containers:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">example</span></span><br><span class="line">      <span class="attr">image:</span> <span class="string">"consul:latest"</span></span><br><span class="line">      <span class="attr">env:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">HOST_IP</span></span><br><span class="line">          <span class="attr">valueFrom:</span></span><br><span class="line">            <span class="attr">fieldRef:</span></span><br><span class="line">              <span class="attr">fieldPath:</span> <span class="string">status.hostIP</span></span><br><span class="line">      <span class="attr">command:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">"/bin/sh"</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">"-ec"</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">|</span></span><br><span class="line">            <span class="string">export</span> <span class="string">CONSUL_HTTP_ADDR="$&#123;HOST_IP&#125;:8500"</span></span><br><span class="line">            <span class="string">consul</span> <span class="string">kv</span> <span class="string">put</span> <span class="string">hello</span> <span class="string">world</span></span><br><span class="line">  <span class="attr">restartPolicy:</span> <span class="string">Never</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>最后便是应用程序，通过consul的headless svc 链接，注册进来啦。</p>
+</li>
+</ul>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/03/25/%E8%BF%90%E7%BB%B4%E4%B9%8B%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/">运维之配置变更</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-03-25</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E8%BF%90%E7%BB%B4/">运维</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4/">配置变更</a></span><div class="content"><p><strong>Detail Matter， 虽然简单，但却重要！</strong></p>
+<p>议题： 如何备份配置文件</p>
+<ul>
+<li><p>在配置中心盛行的情况下，配置每次修改，都会有历史记录（比如etcd/consul等等）。这种系统维护起来当然是非常轻便了。</p>
+</li>
+<li><p>大量的系统采用本地的配置文件。如何最记录每次的变更呢？</p>
+<p>最简单有效的方式，就是文件名绝对路径+日期，备份到特定的磁盘。</p>
+<p>可以参照： <a href="https://www.dennyzhang.com/linux_cp" target="_blank" rel="noopener">备份命令脚本</a>，Pros: 逻辑绝对的简单清晰，Cons：服务器放上这个脚本，洁癖症有点难受。</p>
+</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/bin/bash -e</span></span><br><span class="line"><span class="function"><span class="title">mybackup</span></span>() &#123;</span><br><span class="line">    src_file=<span class="variable">$&#123;1?"What files to backup"&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># get default value from environment variable</span></span><br><span class="line">    <span class="keyword">if</span> [ -n <span class="string">"<span class="variable">$BAK_ROOT_DIR</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">        bak_root_dir=<span class="string">"<span class="variable">$BAK_ROOT_DIR</span>"</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        bak_root_dir=<span class="string">"/data/backup"</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">    parent_dir=$(dirname <span class="string">"<span class="variable">$src_file</span>"</span>)</span><br><span class="line">    short_fname=$(basename <span class="string">"<span class="variable">$src_file</span>"</span>)</span><br><span class="line">    date=<span class="string">"<span class="variable">$(date +'%Y%m%d.%H%M%S')</span>"</span></span><br><span class="line">    bak_dir=<span class="string">"<span class="variable">$&#123;bak_root_dir&#125;</span><span class="variable">$parent_dir</span>"</span></span><br><span class="line">    <span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$src_file</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">        mkdir -p <span class="string">"<span class="variable">$bak_dir</span>"</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"cp <span class="variable">$src_file</span> <span class="variable">$&#123;bak_dir&#125;</span>/<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">        cp <span class="string">"<span class="variable">$src_file</span>"</span> <span class="string">"<span class="variable">$&#123;bak_dir&#125;</span>/<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">    <span class="keyword">elif</span> [ -d <span class="string">"<span class="variable">$src_file</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">        mkdir -p <span class="string">"<span class="variable">$bak_dir</span>-<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"cp -r <span class="variable">$src_file</span> <span class="variable">$bak_dir</span>-<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">        cp -r <span class="string">"<span class="variable">$src_file</span>"</span> <span class="string">"<span class="variable">$bak_dir</span>-<span class="variable">$&#123;short_fname&#125;</span>-<span class="variable">$&#123;date&#125;</span>"</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Error: <span class="variable">$src_file</span> doesn't exist"</span></span><br><span class="line">        <span class="built_in">exit</span> 1</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="更特殊的场景"><a href="#更特殊的场景" class="headerlink" title="更特殊的场景"></a>更特殊的场景</h2><p>Q：n台nginx，作为负载节点，使用相同的配置文件。如何做到有效的更改，且保证完全的一致呢？</p>
+<p>A： 杜绝手工修改产生差异行等情况。通过ansible playbook，统一修改。或修改一处，推送到所有节点，再reload nginx。</p>
+<p>Q： 配置文件之备份</p>
+<p>A： 首先先思考，这个问题是不是驳论🤔。针对存在文件上的配置文件，如果生产服务器，本来存储都是高可用，那么剩下的最大的风险就是人为失误。于是基于墨菲定律，磁盘定时快照是必不可少的咯。</p>
+<p>2021年1月17日 上午10:26:14 补充，在分布式以及容器化的各种场景下，配置文件的维护，更多应该统一从运维平台进行，统一的修改。毕竟运维，不就是可控以及管理嘛。</p>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/03/25/%E8%BF%90%E7%BB%B4%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/">运维如何保证数据查询安全</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-03-25</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E8%BF%90%E7%BB%B4/">运维</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2%E5%AE%89%E5%85%A8/">数据查询安全</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></span><div class="content"><p>生产数据用于测试环境测试，在小型企业应该是比较常见的现象了。测试/开发团队会以无法在内部环境，复现故障为理由，要求将生产备份数据导入到测试环境。即使提供了脱敏脚本，也不见得团队会持续，及时地更新脚本。</p>
+<p>此外，另一个问题便是，是否让开发连接生产数据库，即使是使用只读账号。缺少了数据，排错定位，难度会增加不少。目前个人的体会是，在无法拷贝数据的环境下，隐藏或混淆敏感数据，再配合每次查询进行审计/审核记录，这种方式可以兼顾，最大的开发便捷性与安全审计。</p>
+<p>在GOOGLE 关键字：production data testing environment，会有更多细节/专业的分析。十分值得琢磨。</p>
+</div><hr></div><nav id="pagination"><div class="pagination"><a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-chevron-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-chevron-right"></i></a></div></nav></div></div><footer class="footer-bg" style="background-image: url(https://tva1.sinaimg.cn/large/007S8ZIlgy1get1mqmvxij31hc0u0q7i.jpg)"><div class="layout" id="footer"><div class="copyright">&copy;2020 - 2021 By Chandler Kwok</div><div class="framework-info"><span>Driven - </span><a href="http://hexo.io" target="_blank" rel="noopener"><span>Hexo</span></a><span class="footer-separator">|</span><span>Theme - </span><a href="https://github.com/Molunerfinn/hexo-theme-melody" target="_blank" rel="noopener"><span>Melody</span></a></div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_site_uv"><i class="fa fa-user"></i><span id="busuanzi_value_site_uv"></span><span></span></span><span class="footer-separator">|</span><span id="busuanzi_container_site_pv"><i class="fa fa-eye"></i><span id="busuanzi_value_site_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.7.0"></script><script src="/js/fancybox.js?version=1.7.0"></script><script src="/js/sidebar.js?version=1.7.0"></script><script src="/js/copy.js?version=1.7.0"></script><script src="/js/fireworks.js?version=1.7.0"></script><script src="/js/transition.js?version=1.7.0"></script><script src="/js/scroll.js?version=1.7.0"></script><script src="/js/head.js?version=1.7.0"></script><script>if(/Android|webOS|iPhone|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) {
   $('#nav').addClass('is-mobile')
   $('footer').addClass('is-mobile')
   $('#top-container').addClass('is-mobile')
